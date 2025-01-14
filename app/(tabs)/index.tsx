@@ -45,7 +45,7 @@ export default function App() {
                 <Text>Notes: {item.notes}</Text>
               </View>
               <TouchableOpacity style={styles.viewButton} onPress={() => handleViewPassword(item.password)}>
-                <Text style={styles.viewButtonText}>View Password</Text>
+                <Text style={styles.viewButtonText}>View</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -53,7 +53,7 @@ export default function App() {
       />
 
       <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
-        <Text style={styles.addButtonText}>+ Add New Password</Text>
+        <Text style={styles.addButtonText}>+ Add New Information</Text>
       </TouchableOpacity>
 
       {/* Modal for adding new password */}
@@ -65,7 +65,7 @@ export default function App() {
       >
         <View style={styles.modalBackground}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Add New Password</Text>
+            <Text style={styles.modalTitle}>Add New Information</Text>
             
             <TextInput
               style={styles.input}
@@ -101,7 +101,7 @@ export default function App() {
 
             <View style={styles.modalButtons}>
               <Button title="Cancel" onPress={() => setModalVisible(false)} />
-              <Button title="Add Password" onPress={handleAddPassword} />
+              <Button title="Add Information" onPress={handleAddPassword} />
             </View>
           </View>
         </View>
