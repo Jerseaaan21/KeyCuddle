@@ -16,15 +16,7 @@ const App = () => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, username, password);
       const user = userCredential.user;
-      Alert.alert('Success', 'Login successful!', [
-        {
-          text: 'OK',
-          onPress: () => {
-            setUsername('');
-            setPassword('');
-          },
-        },
-      ]);
+      Alert.alert('Success', 'Login successful!');
       console.log('Logged in user:', user);
     } catch (error: any) {
       Alert.alert('Error', "Account doesn't exist");
@@ -36,17 +28,7 @@ const App = () => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, username, password);
       const user = userCredential.user;
-      Alert.alert('Success', 'Registration successful!', [
-        {
-          text: 'OK',
-          onPress: () => {
-            setFullname('');
-            setAge('');
-            setUsername('');
-            setPassword('');
-          },
-        },
-      ]);
+      Alert.alert('Success', 'Registration successful!');
       console.log('Registered user:', user);
     } catch (error: any) {
       Alert.alert('Error', error.message);
@@ -64,31 +46,33 @@ const App = () => {
 
       <Text style={styles.inputSectionTitle}>Please enter your details</Text>
 
+      {/* Register Form Fields */}
       {!isLogin && (
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputTitle}>Full Name</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Full Name"
-            value={fullname}
-            onChangeText={setFullname}
-          />
-        </View>
+        <>
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputTitle}>Full Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Full Name"
+              value={fullname}
+              onChangeText={setFullname}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputTitle}>Age</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Age"
+              value={age}
+              onChangeText={setAge}
+              keyboardType="numeric"
+            />
+          </View>
+        </>
       )}
 
-      {!isLogin && (
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputTitle}>Age</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Age"
-            value={age}
-            onChangeText={setAge}
-            keyboardType="numeric"
-          />
-        </View>
-      )}
-
+      {/* Email Field */}
       <View style={styles.inputContainer}>
         <Text style={styles.inputTitle}>Email</Text>
         <TextInput
@@ -100,6 +84,7 @@ const App = () => {
         />
       </View>
 
+      {/* Password Field */}
       <View style={styles.inputContainer}>
         <Text style={styles.inputTitle}>Password</Text>
         <View style={styles.passwordContainer}>
@@ -119,6 +104,7 @@ const App = () => {
         </View>
       </View>
 
+      {/* Submit Button */}
       <TouchableOpacity
         style={styles.button}
         onPress={isLogin ? handleLogin : handleRegister}
@@ -126,6 +112,7 @@ const App = () => {
         <Text style={styles.buttonText}>{isLogin ? 'Login' : 'Register'}</Text>
       </TouchableOpacity>
 
+      {/* Toggle between Login/Registration */}
       <TouchableOpacity
         style={styles.toggleButton}
         onPress={() => setIsLogin(!isLogin)}
@@ -141,73 +128,86 @@ const App = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#f0f0f0',
+    padding: 30,
+    backgroundColor: '#f7f7f7',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
-    marginBottom: 20,
+    marginBottom: 30,
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 10,
   },
   title: {
-    fontSize: 22,
-    textAlign: 'center',
-    marginBottom: 10,
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 20,
   },
   inputSectionTitle: {
     fontSize: 16,
+    color: '#666',
     marginBottom: 10,
   },
   inputContainer: {
-    marginBottom: 15,
+    width: '100%',
+    marginBottom: 20,
   },
   inputTitle: {
     fontSize: 14,
+    color: '#333',
     marginBottom: 5,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    padding: 10,
+    padding: 15,
     backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    fontSize: 16,
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
     backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
   },
   passwordInput: {
     flex: 1,
-    padding: 10,
+    padding: 15,
+    fontSize: 16,
   },
   eyeIcon: {
-    padding: 10,
+    padding: 15,
   },
   button: {
     backgroundColor: '#3498db',
-    padding: 10,
-    borderRadius: 5,
+    paddingVertical: 15,
+    borderRadius: 8,
+    width: '100%',
     alignItems: 'center',
+    marginBottom: 20,
   },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: '600',
   },
   toggleButton: {
-    marginTop: 10,
     alignItems: 'center',
+    marginTop: 10,
   },
   toggleButtonText: {
     color: '#3498db',
     fontSize: 14,
+    fontWeight: '500',
   },
 });
 

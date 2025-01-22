@@ -29,10 +29,8 @@ const KeyCuddle: React.FC = () => {
   const [modalUrl, setModalUrl] = useState('');
   const [modalNote, setModalNote] = useState('');
   
-  // Adding a state to handle login
-  const [isLoggedIn, setIsLoggedIn] = useState(true); // Assuming the user is logged in by default
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
   
-  // Use the navigation hook
   const navigation = useNavigation();
 
   const addPassword = () => {
@@ -66,7 +64,7 @@ const KeyCuddle: React.FC = () => {
     setGroupFilter('');
   };
 
-  const clearForm = () => {
+  const clearForm = () => { 
     setTitle('');
     setUsername('');
     setPassword('');
@@ -82,7 +80,6 @@ const KeyCuddle: React.FC = () => {
     setSelectedPassword(password);
     setModalVisible(true);
 
-    // Set modal states for editing
     setModalTitle(password.title);
     setModalUsername(password.username);
     setModalPassword(password.password);
@@ -129,11 +126,9 @@ const KeyCuddle: React.FC = () => {
     setIsPasswordVisible(!isPasswordVisible);
   };
 
-  // Logout function to clear session or user info
   const logout = () => {
     setIsLoggedIn(false);
     alert('You have been logged out');
-    // Navigate to Login screen
     navigation.navigate('login');
   };
 
@@ -141,9 +136,10 @@ const KeyCuddle: React.FC = () => {
     <View style={styles.container}>
       <Text style={styles.title}>KeyCuddle</Text>
 
-      {/* Only show the logout button if the user is logged in */}
       {isLoggedIn && (
-        <Button title="Logout" onPress={logout} color="red" />
+        <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+          <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
       )}
 
       <View style={styles.formContainer}>
@@ -183,24 +179,19 @@ const KeyCuddle: React.FC = () => {
           value={note}
           onChangeText={setNote}
         />
-        <Button title="Add Information" onPress={addPassword} />
+        <Button title="Add Information" onPress={addPassword} color="#3498db" />
       </View>
 
       <View style={styles.groupContainer}>
-        <View style={styles.filterContainer}>
-          <Text>Filter by Title or Username</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Filter"
-            value={groupFilter}
-            onChangeText={setGroupFilter}
-          />
-        </View>
-
-        <Button title="Clear Filters" onPress={clearFilters} />
+        <TextInput
+          style={styles.filterInput}
+          placeholder="Filter by Title or Username"
+          value={groupFilter}
+          onChangeText={setGroupFilter}
+        />
+        <Button title="Clear Filters" onPress={clearFilters} color="#27ae60" />
       </View>
 
-      {/* Table Layout */}
       <View style={styles.tableContainer}>
         <View style={styles.tableHeader}>
           <Text style={styles.tableHeaderText}>Title</Text>
@@ -212,23 +203,20 @@ const KeyCuddle: React.FC = () => {
           data={filteredPasswords}
           keyExtractor={(item, index) => index.toString()}
           renderItem={({ item, index }) => (
-            <View style={styles.tableRow}>
-              <Text style={[styles.tableCell, styles.titleColumn]}>{item.title}</Text>
-              <Text style={[styles.tableCell, styles.usernameColumn]}>{item.username}</Text>
-              <View style={styles.viewButtonContainer}>
-                <TouchableOpacity
-                  style={styles.viewButton}
-                  onPress={() => openModal(item)}
-                >
-                  <Text style={styles.viewText}>View</Text>
-                </TouchableOpacity>
-              </View>
+            <View style={styles.card}>
+              <Text style={[styles.cardText, styles.titleColumn]}>{item.title}</Text>
+              <Text style={[styles.cardText, styles.usernameColumn]}>{item.username}</Text>
+              <TouchableOpacity
+                style={styles.viewButton}
+                onPress={() => openModal(item)}
+              >
+                <Text style={styles.viewText}>View</Text>
+              </TouchableOpacity>
             </View>
           )}
         />
       </View>
 
-      {/* Modal to show and edit full password details */}
       {selectedPassword && (
         <Modal
           animationType="slide"
@@ -277,9 +265,9 @@ const KeyCuddle: React.FC = () => {
                 onChangeText={setModalNote}
               />
 
-              <Button title="Save Changes" onPress={updatePassword} />
-              <Button title="Remove Information" onPress={removePassword} color="red" />
-              <Button title="Close" onPress={closeModal} />
+              <Button title="Save Changes" onPress={updatePassword} color="#2980b9"  />
+              <Button title="Remove Information" onPress={removePassword} color="tomato"  />
+              <Button title="Close" onPress={closeModal} color="#34495e"  />
             </View>
           </View>
         </Modal>
@@ -292,133 +280,137 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#f0f0f0',
     alignItems: 'flex-start',
   },
   title: {
-    fontSize: 24,
-    marginBottom: 30,
-    alignSelf: 'center',
+    fontSize: 40,
+    fontWeight: '700',
+    marginBottom: 20,
+    color: 'black',
+    fontFamily: 'Comic Sans MS',
+    alignSelf: 'center'
+  },
+  logoutButton: {
+    marginTop: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    backgroundColor: '#e74c3c',
+    borderRadius: 8,
+    alignSelf: 'flex-end',
+  },
+  logoutText: {
+    color: '#ecf0f1',
+    fontWeight: 'bold',
   },
   formContainer: {
-    marginBottom: 20,
     width: '100%',
   },
   input: {
-    padding: 10,
-    marginBottom: 8,
-    borderRadius: 5,
+    padding: 15,
+    marginBottom: 15,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#bdc3c7',
+    backgroundColor: '#ecf0f1',
     width: '100%',
   },
   passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 5,
-    borderColor: '#ccc',
-    marginBottom: 8,
+    position: 'relative',
+    marginBottom: 15,
+    width: '100%',
   },
   passwordInput: {
-    padding: 10,
-    width: '90%',
+    padding: 15,
+    marginBottom: 1,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#bdc3c7',
+    backgroundColor: '#ecf0f1',
+    width: '100%',
   },
   eyeIcon: {
-    padding: 10,
+    position: 'absolute',
+    right: 15,
+    top: 17,
   },
   groupContainer: {
-    marginBottom: 20,
+    marginTop: 30,
     width: '100%',
-  },
-  filterContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
   },
   tableContainer: {
-    marginTop: 20,
-    backgroundColor: 'white',
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#ccc',
+    marginTop: 30,
     width: '100%',
+    borderTopWidth: 1,
+    borderTopColor: '#bdc3c7',
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#f1f1f1',
-    padding: 10,
     justifyContent: 'space-between',
-    borderBottomWidth: 2,
-    borderBottomColor: '#ccc',
+    padding: 10,
+    backgroundColor: '#34495e',
   },
   tableHeaderText: {
+    color: '#ecf0f1',
     fontWeight: 'bold',
-    textAlign: 'center',
-    flex: 1,
+    width: '30%',
   },
-  tableRow: {
+  card: {
     flexDirection: 'row',
-    padding: 5,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#bdc3c7',
   },
-  tableCell: {
-    textAlign: 'center',
-    padding: 5,
-    flex: 1,
-    borderRightWidth: 1,
-    borderRightColor: '#ddd',
+  cardText: {
+    fontSize: 16,
+    color: 'black',
   },
   titleColumn: {
-    width: 50,
+    width: '30%',
   },
   usernameColumn: {
-    width: 75,
-  },
-  viewButtonContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 5,
+    width: '30%',
   },
   viewButton: {
     backgroundColor: '#3498db',
-    padding: 6,
-    borderRadius: 3,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 8,
   },
   viewText: {
-    color: 'white',
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: '100%',
-    alignSelf: 'center',
-    fontSize: 12,
-    color: '#777',
-    padding: 10,
-    backgroundColor: '#f0f0f0',
+    color: '#ecf0f1',
+    fontWeight: 'bold',
   },
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContainer: {
-    backgroundColor: 'white',
+    width: '80%',
+    backgroundColor: '#ecf0f1',
     padding: 20,
     borderRadius: 10,
-    alignItems: 'flex-start',
-    width: '80%',
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 20,
+    color: '#2c3e50',
+  },
+  filterInput: {
+    padding: 10,
+    marginBottom: 20,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#bdc3c7',
+    backgroundColor: '#ecf0f1',
+    width: '100%',
+  },
+  modalButton: {
+    marginBottom: 15, 
   },
 });
 
