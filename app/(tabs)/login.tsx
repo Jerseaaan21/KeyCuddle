@@ -30,6 +30,7 @@ const App = () => {
       const user = userCredential.user;
       Alert.alert('Success', 'Registration successful!');
       console.log('Registered user:', user);
+      setIsLogin(true);  // Switch to login view after successful registration
     } catch (error: any) {
       Alert.alert('Error', error.message);
       console.error('Registration error:', error);

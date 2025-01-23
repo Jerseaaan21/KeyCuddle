@@ -1,16 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Button, FlatList, TouchableOpacity, Modal, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
-
-interface PasswordEntry {
-  title: string;
-  username: string;
-  password: string;
-  isPasswordVisible: boolean;
-  url: string;
-  note: string;
-}
+import { auth, db } from './firebaseConfig';  // Import Firebase config
+import { ref, set, push, onValue, update, remove } from 'firebase/database';  // Firebase functions
 
 const KeyCuddle: React.FC = () => {
   const [title, setTitle] = useState('');
@@ -18,53 +11,64 @@ const KeyCuddle: React.FC = () => {
   const [password, setPassword] = useState('');
   const [url, setUrl] = useState('');
   const [note, setNote] = useState('');
-  const [passwords, setPasswords] = useState<PasswordEntry[]>([]);
-  const [groupFilter, setGroupFilter] = useState('');
-  const [isModalVisible, setModalVisible] = useState(false);
-  const [selectedPassword, setSelectedPassword] = useState<PasswordEntry | null>(null);
+  const [passwords, setPasswords] = useState<any[]>([]);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [modalTitle, setModalTitle] = useState('');
-  const [modalUsername, setModalUsername] = useState('');
-  const [modalPassword, setModalPassword] = useState('');
-  const [modalUrl, setModalUrl] = useState('');
-  const [modalNote, setModalNote] = useState('');
-  
+  const [isModalVisible, setModalVisible] = useState(false);
+  const [selectedPassword, setSelectedPassword] = useState<any | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(true);
-  
-  const navigation = useNavigation();
 
+  const navigation = useNavigation();
+  const userId = auth.currentUser?.uid;
+  
+  // User check
+  useEffect(() => {
+    if (!userId) {
+      alert('User is not logged in');
+      navigation.navigate('login');
+    }
+  }, [userId, navigation]);
+
+  // Fetch passwords from Firebase
+  useEffect(() => {
+    if (userId) {
+      const passwordsRef = ref(db, `users/${userId}/passwords`);
+      const unsubscribe = onValue(passwordsRef, (snapshot) => {
+        const data = snapshot.val();
+        const passwordsList = data ? Object.entries(data).map(([key, value]) => ({
+          passwordId: key, 
+          ...value,
+        })) : [];
+        setPasswords(passwordsList); // Set the state directly with the updated data from Firebase
+      });
+
+      return () => unsubscribe();
+    }
+  }, [userId]);
+
+  // Add password to Firebase
   const addPassword = () => {
-    if (title && username && password && url && note) {
-      const newPassword: PasswordEntry = {
+    if (title && username && password && url && note && userId) {
+      const newPasswordRef = push(ref(db, `users/${userId}/passwords`));
+      set(newPasswordRef, {
         title,
         username,
         password,
-        isPasswordVisible: false,
         url,
         note,
-      };
-
-      setPasswords([...passwords, newPassword]);
-      clearForm();
+      })
+        .then(() => {
+          alert('Password added!');
+          clearForm();
+        })
+        .catch((error) => {
+          alert('Error adding password: ' + error.message);
+        });
     } else {
       alert('Please fill in all fields.');
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setIsPasswordVisible(!isPasswordVisible);
-  };
-
-  const deletePassword = (index: number) => {
-    const updatedPasswords = passwords.filter((_, i) => i !== index);
-    setPasswords(updatedPasswords);
-  };
-
-  const clearFilters = () => {
-    setGroupFilter('');
-  };
-
-  const clearForm = () => { 
+  const clearForm = () => {
     setTitle('');
     setUsername('');
     setPassword('');
@@ -72,64 +76,50 @@ const KeyCuddle: React.FC = () => {
     setNote('');
   };
 
-  const filteredPasswords = groupFilter
-    ? passwords.filter((p) => p.title.includes(groupFilter) || p.username.includes(groupFilter))
-    : passwords;
-
-  const openModal = (password: PasswordEntry) => {
-    setSelectedPassword(password);
-    setModalVisible(true);
-
-    setModalTitle(password.title);
-    setModalUsername(password.username);
-    setModalPassword(password.password);
-    setModalUrl(password.url);
-    setModalNote(password.note);
-
-    setIsPasswordVisible(password.isPasswordVisible);
-  };
-
-  const closeModal = () => {
-    setModalVisible(false);
-    setSelectedPassword(null);
-  };
-
-  const updatePassword = () => {
-    if (selectedPassword) {
-      const updatedPasswords = passwords.map((item) =>
-        item === selectedPassword
-          ? {
-              ...item,
-              title: modalTitle || item.title,
-              username: modalUsername || item.username,
-              password: modalPassword || item.password,
-              url: modalUrl || item.url,
-              note: modalNote || item.note,
-              isPasswordVisible,
-            }
-          : item
-      );
-      setPasswords(updatedPasswords);
-      closeModal();
+  const deletePassword = (passwordId: string) => {
+    if (userId) {
+      const passwordRef = ref(db, `users/${userId}/passwords/${passwordId}`);
+      remove(passwordRef)
+        .then(() => {
+          alert('Password deleted!');
+        })
+        .catch((error) => {
+          alert('Error deleting password: ' + error.message);
+        });
     }
-  };
-
-  const removePassword = () => {
-    if (selectedPassword) {
-      const updatedPasswords = passwords.filter((item) => item !== selectedPassword);
-      setPasswords(updatedPasswords);
-      closeModal();
-    }
-  };
-
-  const handleModalPasswordVisibilityToggle = () => {
-    setIsPasswordVisible(!isPasswordVisible);
   };
 
   const logout = () => {
     setIsLoggedIn(false);
     alert('You have been logged out');
     navigation.navigate('login');
+  };
+
+  // Open the modal with the selected password data
+  const openPasswordModal = (password: any) => {
+    setSelectedPassword(password);
+    setModalVisible(true);
+  };
+
+  // Save the changes made to the selected password
+  const saveChanges = () => {
+    if (selectedPassword && userId) {
+      const passwordRef = ref(db, `users/${userId}/passwords/${selectedPassword.passwordId}`);
+      update(passwordRef, {
+        title: selectedPassword.title,
+        username: selectedPassword.username,
+        password: selectedPassword.password,
+        url: selectedPassword.url,
+        note: selectedPassword.note,
+      })
+        .then(() => {
+          alert('Changes saved successfully!');
+          setModalVisible(false); // Close the modal after saving
+        })
+        .catch((error) => {
+          alert('Error saving changes: ' + error.message);
+        });
+    }
   };
 
   return (
@@ -142,6 +132,7 @@ const KeyCuddle: React.FC = () => {
         </TouchableOpacity>
       )}
 
+      {/* Form for adding password */}
       <View style={styles.formContainer}>
         <TextInput
           style={styles.input}
@@ -163,7 +154,7 @@ const KeyCuddle: React.FC = () => {
             secureTextEntry={!isPasswordVisible}
             onChangeText={setPassword}
           />
-          <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
+          <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)} style={styles.eyeIcon}>
             <Icon name={isPasswordVisible ? 'eye-slash' : 'eye'} size={20} color="#888" />
           </TouchableOpacity>
         </View>
@@ -182,16 +173,7 @@ const KeyCuddle: React.FC = () => {
         <Button title="Add Information" onPress={addPassword} color="#3498db" />
       </View>
 
-      <View style={styles.groupContainer}>
-        <TextInput
-          style={styles.filterInput}
-          placeholder="Filter by Title or Username"
-          value={groupFilter}
-          onChangeText={setGroupFilter}
-        />
-        <Button title="Clear Filters" onPress={clearFilters} color="#27ae60" />
-      </View>
-
+      {/* Table for displaying passwords */}
       <View style={styles.tableContainer}>
         <View style={styles.tableHeader}>
           <Text style={styles.tableHeaderText}>Title</Text>
@@ -200,29 +182,36 @@ const KeyCuddle: React.FC = () => {
         </View>
 
         <FlatList
-          data={filteredPasswords}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item, index }) => (
+          data={passwords}
+          keyExtractor={(item) => item.passwordId} // Make sure passwordId is unique and used here
+          renderItem={({ item }) => (
             <View style={styles.card}>
               <Text style={[styles.cardText, styles.titleColumn]}>{item.title}</Text>
               <Text style={[styles.cardText, styles.usernameColumn]}>{item.username}</Text>
               <TouchableOpacity
                 style={styles.viewButton}
-                onPress={() => openModal(item)}
+                onPress={() => openPasswordModal(item)} // Open modal with the selected password
               >
                 <Text style={styles.viewText}>View</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => deletePassword(item.passwordId)} // Delete password
+              >
+                <Text style={styles.deleteText}>Delete</Text>
               </TouchableOpacity>
             </View>
           )}
         />
       </View>
 
+      {/* Modal for viewing and editing password */}
       {selectedPassword && (
         <Modal
           animationType="slide"
           transparent={true}
           visible={isModalVisible}
-          onRequestClose={closeModal}
+          onRequestClose={() => setModalVisible(false)}
         >
           <View style={styles.modalOverlay}>
             <View style={styles.modalContainer}>
@@ -231,43 +220,42 @@ const KeyCuddle: React.FC = () => {
               <TextInput
                 style={styles.input}
                 placeholder="Title"
-                value={modalTitle}
-                onChangeText={setModalTitle}
+                value={selectedPassword.title}
+                onChangeText={(text) => setSelectedPassword({ ...selectedPassword, title: text })}
               />
               <TextInput
                 style={styles.input}
                 placeholder="Username"
-                value={modalUsername}
-                onChangeText={setModalUsername}
+                value={selectedPassword.username}
+                onChangeText={(text) => setSelectedPassword({ ...selectedPassword, username: text })}
               />
               <View style={styles.passwordContainer}>
                 <TextInput
                   style={styles.passwordInput}
                   placeholder="Password"
-                  value={modalPassword}
+                  value={selectedPassword.password}
                   secureTextEntry={!isPasswordVisible}
-                  onChangeText={setModalPassword}
+                  onChangeText={(text) => setSelectedPassword({ ...selectedPassword, password: text })}
                 />
-                <TouchableOpacity onPress={handleModalPasswordVisibilityToggle} style={styles.eyeIcon}>
+                <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)} style={styles.eyeIcon}>
                   <Icon name={isPasswordVisible ? 'eye-slash' : 'eye'} size={20} color="#888" />
                 </TouchableOpacity>
               </View>
               <TextInput
                 style={styles.input}
                 placeholder="URL"
-                value={modalUrl}
-                onChangeText={setModalUrl}
+                value={selectedPassword.url}
+                onChangeText={(text) => setSelectedPassword({ ...selectedPassword, url: text })}
               />
               <TextInput
                 style={styles.input}
                 placeholder="Note"
-                value={modalNote}
-                onChangeText={setModalNote}
+                value={selectedPassword.note}
+                onChangeText={(text) => setSelectedPassword({ ...selectedPassword, note: text })}
               />
 
-              <Button title="Save Changes" onPress={updatePassword} color="#2980b9"  />
-              <Button title="Remove Information" onPress={removePassword} color="tomato"  />
-              <Button title="Close" onPress={closeModal} color="#34495e"  />
+              <Button title="Save Changes" onPress={saveChanges} color="#2980b9" />
+              <Button title="Close" onPress={() => setModalVisible(false)} color="#34495e" />
             </View>
           </View>
         </Modal>
@@ -333,10 +321,6 @@ const styles = StyleSheet.create({
     right: 15,
     top: 17,
   },
-  groupContainer: {
-    marginTop: 30,
-    width: '100%',
-  },
   tableContainer: {
     marginTop: 30,
     width: '100%',
@@ -382,6 +366,16 @@ const styles = StyleSheet.create({
     color: '#ecf0f1',
     fontWeight: 'bold',
   },
+  deleteButton: {
+    backgroundColor: '#e74c3c',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
+  deleteText: {
+    color: '#ecf0f1',
+    fontWeight: 'bold',
+  },
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',
@@ -399,18 +393,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
     color: '#2c3e50',
-  },
-  filterInput: {
-    padding: 10,
-    marginBottom: 20,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#bdc3c7',
-    backgroundColor: '#ecf0f1',
-    width: '100%',
-  },
-  modalButton: {
-    marginBottom: 15, 
   },
 });
 
