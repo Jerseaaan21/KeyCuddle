@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, FlatList, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Button, FlatList, TouchableOpacity, Modal, StyleSheet, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
-import { auth, db } from './firebaseConfig';  // Import Firebase config
-import { ref, set, push, onValue, update, remove } from 'firebase/database';  // Firebase functions
+import { auth, db } from './firebaseConfig';
+import { ref, set, push, onValue, update, remove } from 'firebase/database';
 
 const KeyCuddle: React.FC = () => {
   const [title, setTitle] = useState('');
@@ -12,6 +12,8 @@ const KeyCuddle: React.FC = () => {
   const [url, setUrl] = useState('');
   const [note, setNote] = useState('');
   const [passwords, setPasswords] = useState<any[]>([]);
+  const [filteredPasswords, setFilteredPasswords] = useState<any[]>([]);
+  const [searchTitle, setSearchTitle] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
   const [selectedPassword, setSelectedPassword] = useState<any | null>(null);
@@ -19,8 +21,7 @@ const KeyCuddle: React.FC = () => {
 
   const navigation = useNavigation();
   const userId = auth.currentUser?.uid;
-  
-  // User check
+
   useEffect(() => {
     if (!userId) {
       alert('User is not logged in');
@@ -28,24 +29,25 @@ const KeyCuddle: React.FC = () => {
     }
   }, [userId, navigation]);
 
-  // Fetch passwords from Firebase
   useEffect(() => {
     if (userId) {
       const passwordsRef = ref(db, `users/${userId}/passwords`);
       const unsubscribe = onValue(passwordsRef, (snapshot) => {
         const data = snapshot.val();
-        const passwordsList = data ? Object.entries(data).map(([key, value]) => ({
-          passwordId: key, 
-          ...value,
-        })) : [];
-        setPasswords(passwordsList); // Set the state directly with the updated data from Firebase
+        const passwordsList = data
+          ? Object.entries(data).map(([key, value]) => ({
+              passwordId: key,
+              ...value,
+            }))
+          : [];
+        setPasswords(passwordsList);
+        setFilteredPasswords(passwordsList);
       });
 
       return () => unsubscribe();
     }
   }, [userId]);
 
-  // Add password to Firebase
   const addPassword = () => {
     if (title && username && password && url && note && userId) {
       const newPasswordRef = push(ref(db, `users/${userId}/passwords`));
@@ -95,13 +97,16 @@ const KeyCuddle: React.FC = () => {
     navigation.navigate('login');
   };
 
-  // Open the modal with the selected password data
   const openPasswordModal = (password: any) => {
     setSelectedPassword(password);
     setModalVisible(true);
   };
 
-  // Save the changes made to the selected password
+  const closePasswordModal = () => {
+    setModalVisible(false);
+    setSelectedPassword(null);
+  };
+
   const saveChanges = () => {
     if (selectedPassword && userId) {
       const passwordRef = ref(db, `users/${userId}/passwords/${selectedPassword.passwordId}`);
@@ -114,7 +119,7 @@ const KeyCuddle: React.FC = () => {
       })
         .then(() => {
           alert('Changes saved successfully!');
-          setModalVisible(false); // Close the modal after saving
+          setModalVisible(false);
         })
         .catch((error) => {
           alert('Error saving changes: ' + error.message);
@@ -122,145 +127,171 @@ const KeyCuddle: React.FC = () => {
     }
   };
 
+  const filterPasswords = () => {
+    const filtered = passwords.filter((item) =>
+      item.title.toLowerCase().includes(searchTitle.toLowerCase())
+    );
+    setFilteredPasswords(filtered);
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>KeyCuddle</Text>
+    <ScrollView contentContainerStyle={styles.scrollContent}>
+      <View style={styles.container}>
+        <Text style={styles.title}>KeyCuddle</Text>
 
-      {isLoggedIn && (
-        <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
-      )}
-
-      {/* Form for adding password */}
-      <View style={styles.formContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Title"
-          value={title}
-          onChangeText={setTitle}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Username"
-          value={username}
-          onChangeText={setUsername}
-        />
-        <View style={styles.passwordContainer}>
-          <TextInput
-            style={styles.passwordInput}
-            placeholder="Password"
-            value={password}
-            secureTextEntry={!isPasswordVisible}
-            onChangeText={setPassword}
-          />
-          <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)} style={styles.eyeIcon}>
-            <Icon name={isPasswordVisible ? 'eye-slash' : 'eye'} size={20} color="#888" />
+        {isLoggedIn && (
+          <TouchableOpacity style={[styles.logoutButton, { marginBottom: 20 }]} onPress={logout}>
+            <Text style={styles.logoutText}>Logout</Text>
           </TouchableOpacity>
+        )}
+
+        <View style={styles.formContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Title"
+            value={title}
+            onChangeText={setTitle}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Username"
+            value={username}
+            onChangeText={setUsername}
+          />
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Password"
+              value={password}
+              secureTextEntry={!isPasswordVisible}
+              onChangeText={setPassword}
+            />
+            <TouchableOpacity
+              onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+              style={styles.eyeIcon}
+            >
+              <Icon name={isPasswordVisible ? 'eye-slash' : 'eye'} size={20} color="#888" />
+            </TouchableOpacity>
+          </View>
+          <TextInput
+            style={styles.input}
+            placeholder="URL"
+            value={url}
+            onChangeText={setUrl}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Note"
+            value={note}
+            onChangeText={setNote}
+          />
+          <Button title="Add Information" onPress={addPassword} color="#3498db" />
+          <View style={{ marginBottom: 20 }} />
         </View>
-        <TextInput
-          style={styles.input}
-          placeholder="URL"
-          value={url}
-          onChangeText={setUrl}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Note"
-          value={note}
-          onChangeText={setNote}
-        />
-        <Button title="Add Information" onPress={addPassword} color="#3498db" />
-      </View>
 
-      {/* Table for displaying passwords */}
-      <View style={styles.tableContainer}>
-        <View style={styles.tableHeader}>
-          <Text style={styles.tableHeaderText}>Title</Text>
-          <Text style={styles.tableHeaderText}>Username</Text>
-          <Text style={styles.tableHeaderText}>Action</Text>
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <TextInput
+              style={[styles.input, styles.searchInput]}
+              placeholder="Search Title"
+              value={searchTitle}
+              onChangeText={setSearchTitle}
+            />
+            <TouchableOpacity style={styles.filterButton} onPress={filterPasswords}>
+              <Text style={styles.filterButtonText}>Filter</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <FlatList
-          data={passwords}
-          keyExtractor={(item) => item.passwordId} // Make sure passwordId is unique and used here
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <Text style={[styles.cardText, styles.titleColumn]}>{item.title}</Text>
-              <Text style={[styles.cardText, styles.usernameColumn]}>{item.username}</Text>
-              <TouchableOpacity
-                style={styles.viewButton}
-                onPress={() => openPasswordModal(item)} // Open modal with the selected password
-              >
-                <Text style={styles.viewText}>View</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => deletePassword(item.passwordId)} // Delete password
-              >
-                <Text style={styles.deleteText}>Delete</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        />
-      </View>
+        <View style={styles.tableContainer}>
+          <View style={styles.tableHeader}>
+            <Text style={styles.tableHeaderText}>Title</Text>
+            <Text style={styles.tableHeaderText}>Username</Text>
+            <Text style={styles.tableHeaderText}>Action</Text>
+          </View>
 
-      {/* Modal for viewing and editing password */}
-      {selectedPassword && (
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={isModalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>View/Edit {selectedPassword.title}</Text>
-
-              <TextInput
-                style={styles.input}
-                placeholder="Title"
-                value={selectedPassword.title}
-                onChangeText={(text) => setSelectedPassword({ ...selectedPassword, title: text })}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Username"
-                value={selectedPassword.username}
-                onChangeText={(text) => setSelectedPassword({ ...selectedPassword, username: text })}
-              />
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  style={styles.passwordInput}
-                  placeholder="Password"
-                  value={selectedPassword.password}
-                  secureTextEntry={!isPasswordVisible}
-                  onChangeText={(text) => setSelectedPassword({ ...selectedPassword, password: text })}
-                />
-                <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)} style={styles.eyeIcon}>
-                  <Icon name={isPasswordVisible ? 'eye-slash' : 'eye'} size={20} color="#888" />
+          <FlatList
+            data={filteredPasswords}
+            keyExtractor={(item) => item.passwordId}
+            renderItem={({ item }) => (
+              <View style={styles.card}>
+                <Text style={[styles.cardText, styles.titleColumn]}>{item.title}</Text>
+                <Text style={[styles.cardText, styles.usernameColumn]}>{item.username}</Text>
+                <TouchableOpacity
+                  style={styles.viewButton}
+                  onPress={() => openPasswordModal(item)}
+                >
+                  <Text style={styles.viewText}>View/Edit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => deletePassword(item.passwordId)}
+                >
+                  <Text style={styles.deleteText}>Delete</Text>
                 </TouchableOpacity>
               </View>
-              <TextInput
-                style={styles.input}
-                placeholder="URL"
-                value={selectedPassword.url}
-                onChangeText={(text) => setSelectedPassword({ ...selectedPassword, url: text })}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Note"
-                value={selectedPassword.note}
-                onChangeText={(text) => setSelectedPassword({ ...selectedPassword, note: text })}
-              />
+            )}
+          />
+        </View>
 
-              <Button title="Save Changes" onPress={saveChanges} color="#2980b9" />
-              <Button title="Close" onPress={() => setModalVisible(false)} color="#34495e" />
+        {selectedPassword && (
+          <Modal
+            visible={isModalVisible}
+            transparent
+            animationType="slide"
+            onRequestClose={closePasswordModal}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContainer}>
+                <Text style={styles.modalTitle}>Password Details</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Title"
+                  value={selectedPassword.title}
+                  onChangeText={(text) =>
+                    setSelectedPassword((prev) => ({ ...prev, title: text }))
+                  }
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Username"
+                  value={selectedPassword.username}
+                  onChangeText={(text) =>
+                    setSelectedPassword((prev) => ({ ...prev, username: text }))
+                  }
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  value={selectedPassword.password}
+                  onChangeText={(text) =>
+                    setSelectedPassword((prev) => ({ ...prev, password: text }))
+                  }
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="URL"
+                  value={selectedPassword.url}
+                  onChangeText={(text) =>
+                    setSelectedPassword((prev) => ({ ...prev, url: text }))
+                  }
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Note"
+                  value={selectedPassword.note}
+                  onChangeText={(text) =>
+                    setSelectedPassword((prev) => ({ ...prev, note: text }))
+                  }
+                />
+                <Button title="Save Changes" onPress={saveChanges} color="#27ae60" />
+                <Button title="Close" onPress={closePasswordModal} color="#e74c3c" />
+              </View>
             </View>
-          </View>
-        </Modal>
-      )}
-    </View>
+          </Modal>
+        )}
+      </View>
+    </ScrollView>
   );
 };
 
@@ -268,6 +299,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    backgroundColor: '#f0f0f0',
     alignItems: 'flex-start',
   },
   title: {
@@ -394,6 +426,34 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     color: '#2c3e50',
   },
+  searchContainer: {
+    width: '100%',
+    marginBottom: 15,
+  },
+  searchInputContainer: {
+    position: 'relative',
+    width: '100%',
+  },
+  searchInput: {
+    paddingRight: 70, // Add padding to accommodate the button
+  },
+  filterButton: {
+    position: 'absolute',
+    right: 10,
+    top: 10,
+    backgroundColor: '#27ae60',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+  },
+  filterButtonText: {
+    color: '#ecf0f1',
+    fontWeight: 'bold',
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+
 });
 
 export default KeyCuddle;

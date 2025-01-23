@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { ScrollView, View, TextInput, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from './firebaseConfig'; // Adjust the import path based on your file structure
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -30,7 +30,7 @@ const App = () => {
       const user = userCredential.user;
       Alert.alert('Success', 'Registration successful!');
       console.log('Registered user:', user);
-      setIsLogin(true);  // Switch to login view after successful registration
+      setIsLogin(true); // Switch to login view after successful registration
     } catch (error: any) {
       Alert.alert('Error', error.message);
       console.error('Registration error:', error);
@@ -38,7 +38,11 @@ const App = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.scrollContainer}
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Welcome! KeyCuddlers</Text>
       </View>
@@ -122,16 +126,17 @@ const App = () => {
           {isLogin ? "Don't have an account? Register" : 'Already have an account? Login'}
         </Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  scrollContainer: {
     flex: 1,
-    padding: 30,
     backgroundColor: '#f7f7f7',
-    justifyContent: 'center',
+  },
+  container: {
+    padding: 30,
     alignItems: 'center',
   },
   header: {
